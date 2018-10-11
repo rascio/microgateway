@@ -10,5 +10,11 @@ buildNumber.properties
 
 # Avoid ignoring Maven wrapper jar file (.jar files are usually ignored)
 !/.mvn/wrapper/maven-wrapper.jar
+<<<<<<< HEAD
 *.iml
 .idea
+=======
+
+*.iml
+.idea
+>>>>>>> bf26ffac0b8a53db7992415190a5827c44ed4a5f
