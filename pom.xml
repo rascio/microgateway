@@ -10,9 +10,9 @@
     <packaging>pom</packaging>
     <modules>
         <module>core</module>
-        <module>jersey-adapter</module>
-        <module>spring-adapter</module>
         <module>functional-tests</module>
+        <module>client-adapters</module>
+        <module>server-spring</module>
     </modules>
 
     <properties>
@@ -44,7 +44,23 @@
                     <artifactId>wiremock-maven-plugin</artifactId>
                     <version>2.14.0</version>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-source-plugin</artifactId>
+                    <version>3.0.1</version>
+                    <executions>
+                        <execution>
+                            <id>attach-sources</id>
+                            <phase>verify</phase>
+                            <goals>
+                                <goal>jar-no-fork</goal>
+                            </goals>
+                        </execution>
+                    </executions>
+                </plugin>
             </plugins>
         </pluginManagement>
     </build>
+
+
 </project>

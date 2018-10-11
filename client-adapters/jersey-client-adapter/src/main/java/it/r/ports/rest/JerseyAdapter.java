@@ -3,10 +3,9 @@ package it.r.ports.rest;
 import com.google.common.collect.ImmutableSet;
 import it.r.ports.api.CommunicationException;
 import it.r.ports.api.Message;
-import it.r.ports.api.Port;
+import it.r.ports.api.Gateway;
 import it.r.ports.rest.api.Header;
 import it.r.ports.rest.api.Http;
-import it.r.ports.rest.api.HttpMethod;
 import lombok.Value;
 
 import javax.ws.rs.ProcessingException;
@@ -20,20 +19,13 @@ import java.beans.IntrospectionException;
 import java.beans.Introspector;
 import java.beans.PropertyDescriptor;
 import java.lang.annotation.Annotation;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static it.r.ports.rest.api.HttpMethod.*;
-import static it.r.ports.rest.api.HttpMethod.GET;
-
-public class JerseyAdapter implements Port {
+public class JerseyAdapter implements Gateway {
 
     private final WebTarget client;
 
@@ -42,7 +34,7 @@ public class JerseyAdapter implements Port {
     }
 
     @Override
-    public <T> T send(Message<T> message) throws CommunicationException {
+    public <T> T send(Message<T> message) {
         final Http http = message.getClass().getAnnotation(Http.class);
 
         final HttpRequest request = from(message);
@@ -116,8 +108,7 @@ public class JerseyAdapter implements Port {
             }
         });
 
-        copier.stream()
-            .forEach(c -> c.accept(bean, result));
+        copier.forEach(c -> c.accept(bean, result));
 
         return result;
     }
@@ -126,11 +117,11 @@ public class JerseyAdapter implements Port {
         try {
             return descriptor.getReadMethod().invoke(bean);
         } catch (Exception e) {
-            throw new RuntimeException("nono " + descriptor.getName() + " - " + bean, e);
+            throw new RuntimeException("read what? " + descriptor.getName() + " - " + bean, e);
         }
     }
 
-    private static BiConsumer<Object, HttpRequest> extractKey(PropertyDescriptor descriptor, Set<String> queryParams) {
+    private static BiConsumer<Object, HttpRequest> extractKey(PropertyDescriptor descriptor, Set<String> pathParams) {
         final Set<Annotation> annotations;
         try {
             annotations = ImmutableSet.copyOf(descriptor.getReadMethod()
@@ -139,13 +130,13 @@ public class JerseyAdapter implements Port {
                 .getDeclaredAnnotations());
 
         } catch (NoSuchFieldException e) {
-            throw new IllegalStateException("What? " + descriptor.getName(), e);
+            throw new IllegalStateException("extractKey from what? " + descriptor.getName(), e);
         }
 
         if (annotations.contains(Header.class)) {
             return (msg, req) -> req.getHeaders().put(descriptor.getName(), read(descriptor, msg));
         }
-        else if (queryParams.contains(descriptor.getName())) {
+        else if (pathParams.contains(descriptor.getName())) {
             return (msg, req) -> req.getPathParams().put(descriptor.getName(), read(descriptor, msg));
         }
         else {

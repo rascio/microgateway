@@ -1,5 +1,7 @@
 package it.r.ports.rest.api;
 
+import it.r.ports.api.Message;
+
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;

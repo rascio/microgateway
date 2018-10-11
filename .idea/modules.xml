@@ -3,11 +3,12 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/all.iml" filepath="$PROJECT_DIR$/all.iml" />
+      <module fileurl="file://$PROJECT_DIR$/client-adapters/client-adapters.iml" filepath="$PROJECT_DIR$/client-adapters/client-adapters.iml" />
       <module fileurl="file://$PROJECT_DIR$/core/core.iml" filepath="$PROJECT_DIR$/core/core.iml" />
-      <module fileurl="file://$PROJECT_DIR$/functional-tests.iml" filepath="$PROJECT_DIR$/functional-tests.iml" />
-      <module fileurl="file://$PROJECT_DIR$/functional-tests/functional-tests (1).iml" filepath="$PROJECT_DIR$/functional-tests/functional-tests (1).iml" />
-      <module fileurl="file://$PROJECT_DIR$/jersey-adapter/jersey-adapter.iml" filepath="$PROJECT_DIR$/jersey-adapter/jersey-adapter.iml" />
-      <module fileurl="file://$PROJECT_DIR$/spring-adapter/spring-adapter.iml" filepath="$PROJECT_DIR$/spring-adapter/spring-adapter.iml" />
+      <module fileurl="file://$PROJECT_DIR$/functional-tests/functional-tests.iml" filepath="$PROJECT_DIR$/functional-tests/functional-tests.iml" />
+      <module fileurl="file://$PROJECT_DIR$/client-adapters/jersey-client-adapter/jersey-client-adapter.iml" filepath="$PROJECT_DIR$/client-adapters/jersey-client-adapter/jersey-client-adapter.iml" />
+      <module fileurl="file://$PROJECT_DIR$/server-spring/server-spring.iml" filepath="$PROJECT_DIR$/server-spring/server-spring.iml" />
+      <module fileurl="file://$PROJECT_DIR$/client-adapters/spring-adapter/spring-adapter.iml" filepath="$PROJECT_DIR$/client-adapters/spring-adapter/spring-adapter.iml" />
     </modules>
   </component>
 </project>

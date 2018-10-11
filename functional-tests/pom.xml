@@ -13,6 +13,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>3.4</version>
+        </dependency>
+        <dependency>
             <groupId>it.r.microgateway</groupId>
             <artifactId>core</artifactId>
             <version>1.0-SNAPSHOT</version>
@@ -20,12 +25,19 @@
 
         <dependency>
             <groupId>it.r.microgateway</groupId>
-            <artifactId>jersey-adapter</artifactId>
+            <artifactId>jersey-client-adapter</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>
             <artifactId>lombok</artifactId>
+        </dependency>
+
+        <!-- https://mvnrepository.com/artifact/org.springframework/spring-webflux -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webflux</artifactId>
+            <version>5.1.0.RELEASE</version>
         </dependency>
 
         <!-- Extra -->
