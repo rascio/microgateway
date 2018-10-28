@@ -1,12 +1,17 @@
 package it.r.ports.rest;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.sun.xml.internal.bind.v2.util.QNameMap;
 import it.r.ports.api.CommunicationException;
 import it.r.ports.api.Message;
 import it.r.ports.api.Gateway;
+import it.r.ports.api.Request;
 import it.r.ports.rest.api.Header;
 import it.r.ports.rest.api.Http;
+import it.r.ports.rest.api.RestApiRegistry;
 import lombok.Value;
+import org.apache.commons.beanutils.BeanMap;
 
 import javax.ws.rs.ProcessingException;
 import javax.ws.rs.WebApplicationException;
@@ -28,27 +33,29 @@ import java.util.stream.Stream;
 public class JerseyAdapter implements Gateway {
 
     private final WebTarget client;
+    private final RestApiRegistry restApiRegistry;
 
-    public JerseyAdapter(WebTarget client) {
+    public JerseyAdapter(WebTarget client, RestApiRegistry restApiRegistry) {
         this.client = client;
+        this.restApiRegistry = restApiRegistry;
     }
 
-    @Override
-    public <T> T send(Message<T> message) {
-        final Http http = message.getClass().getAnnotation(Http.class);
 
-        final HttpRequest request = from(message);
+    @Override
+    public <I, P, B, T> T send(Request<I, P, B, T> message) {
+        final Http http = restApiRegistry.find(message.getClass())
+            .orElseThrow(() -> new IllegalStateException("Not managed " + message.getClass().getName()));
 
         final Function<WebTarget, Invocation> configurer;
-        switch (http.method()){
+        switch (http.getMethod()){
             case GET:
-                configurer = get(request);
+                configurer = get(message, http);
                 break;
             case POST:
-                configurer = post(request);
+                configurer = post(message, http);
                 break;
             default:
-                throw new IllegalStateException("Whaat? " + http.method());
+                throw new IllegalStateException("Whaat? " + http.getMethod());
         }
 
         final Invocation invocation = configurer.apply(client);
@@ -61,42 +68,59 @@ public class JerseyAdapter implements Gateway {
         }
     }
 
-    private Function<WebTarget, Invocation> post(HttpRequest message) {
+    private Function<WebTarget, Invocation> post(Request<?, ?, ?, ?> req, Http http) {
         return client -> client
-            .path(message.getHttp().path())
-            .resolveTemplates(message.getPathParams())
+            .path(http.getPath())
+            .resolveTemplates(toMap(req.getId()))
             .request(MediaType.APPLICATION_JSON_TYPE)
-            .headers(new MultivaluedHashMap<>(message.getHeaders()))
+//            .headers(new MultivaluedHashMap<>(message.getHeaders()))
             .buildPost(
 //                message.getHttp().multipart()
 //                ? Entity.entity()
-                Entity.json(message.getBody())
+                Entity.json(req.getBody())
             );
     }
 
-    private Function<WebTarget, Invocation> get(HttpRequest message) {
-        return client -> message.getBody()
+    private Map<String, Object> toMap(Object id) {
+        if (id instanceof Map) {
+            return (Map<String, Object>) id;
+        }
+        else {
+            return ImmutableMap.of("id", id);
+        }
+    }
+
+    private Function<WebTarget, Invocation> get(Request<?, ?, ?, ?> req, Http http) {
+        return client -> beanMap(req.getParameters())
             .entrySet()
             .stream()
             .reduce(
                 client,
-                (t, e) -> t.queryParam(e.getKey(), e.getValue()),
+                (t, e) -> t.queryParam(e.getKey().toString(), e.getValue()),
                 (t1, t2) -> t1
             )
-            .path(message.getHttp().path())
-            .resolveTemplates(message.getPathParams())
+            .path(http.getPath())
+            .resolveTemplates(toMap(req.getId()))
             .request(MediaType.APPLICATION_JSON_TYPE)
-            .headers(new MultivaluedHashMap<>(message.getHeaders()))
+//            .headers(new MultivaluedHashMap<>(message.getHeaders()))
             .buildGet();
+    }
+
+    private Map<String, Object> beanMap(Object parameters) {
+        final BeanMap map = new BeanMap(parameters);
+        final Map<String, Object> res = new HashMap(map);
+        res.remove("class");
+
+        return res;
     }
 
 
     private static final Map<Class, List<BiConsumer<Object, HttpRequest>>> CACHE = new HashMap<>();
-    private static HttpRequest from(Object bean) {
-        final HttpRequest result = new HttpRequest(bean.getClass().getAnnotation(Http.class));
+    private static HttpRequest from(Object bean, Http http) {
+        final HttpRequest result = new HttpRequest(http);
 
         final List<BiConsumer<Object, HttpRequest>> copier = CACHE.computeIfAbsent(bean.getClass(), k -> {
-            final Set<String> pathParams = UriSupport.tokens(result.getHttp().path());
+            final Set<String> pathParams = UriSupport.tokens(result.getHttp().getPath());
             try {
                 return Stream.of(Introspector.getBeanInfo(k).getPropertyDescriptors())
                     .filter(d -> !Objects.equals(d.getName(), "class"))

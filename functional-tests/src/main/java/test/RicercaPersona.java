@@ -1,20 +1,29 @@
 package test;
 
-import it.r.ports.api.Message;
-import it.r.ports.rest.api.Http;
-import it.r.ports.rest.api.HttpMethod;
-import lombok.*;
+import it.r.ports.api.Query;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+import lombok.Value;
+import test.RicercaPersona.PersonaParameters;
+
+import java.beans.ConstructorProperties;
+import java.util.Map;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-@Http(method = HttpMethod.GET, path = "/{idAzienda}/ricerca")
-public class RicercaPersona implements Message<String> {
-    private String idAzienda;
-    private String q;
+public class RicercaPersona implements Query<String, PersonaParameters, String> {
+    private String id;
+    private PersonaParameters parameters;
 
     @Override
     public Class<String> responseType() {
         return String.class;
+    }
+
+    @Value
+    public static class PersonaParameters {
+        private String q;
     }
 }

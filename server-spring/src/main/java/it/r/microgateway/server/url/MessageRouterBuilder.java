@@ -1,19 +1,30 @@
 package it.r.microgateway.server.url;
 
 import com.google.common.collect.ImmutableMap;
+import it.r.ports.api.Gateway;
 import it.r.ports.api.Message;
+import it.r.ports.api.Request;
 import it.r.ports.rest.api.Http;
 import it.r.ports.rest.api.HttpMethod;
+import it.r.ports.rest.api.RestApiRegistry;
 import it.r.ports.utils.BeanUtils;
+import it.r.ports.utils.Introspection;
+import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.core.convert.ConversionService;
 import org.springframework.http.MediaType;
-import org.springframework.web.reactive.function.server.HandlerFunction;
-import org.springframework.web.reactive.function.server.RouterFunction;
-import org.springframework.web.reactive.function.server.RouterFunctions;
-import org.springframework.web.reactive.function.server.ServerResponse;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.reactive.function.server.*;
 
-import java.util.function.Function;
+import java.beans.PropertyDescriptor;
+import java.lang.reflect.Field;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.springframework.web.reactive.function.BodyInserters.fromObject;
 import static org.springframework.web.reactive.function.server.RequestPredicates.GET;
@@ -22,71 +33,104 @@ import static org.springframework.web.reactive.function.server.RequestPredicates
 public class MessageRouterBuilder {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MessageRouterBuilder.class);
-    private final RouterFunction<ServerResponse> router;
 
-    public static MessageRouterBuilder create() {
-        return new MessageRouterBuilder(null);
+    public static RouterFunction<ServerResponse> create(RestApiRegistry registry, Gateway gateway, ConversionService conversionService) {
+        final Builder builder = new Builder(conversionService);
+        return registry.getApis()
+            .entrySet()
+            .stream()
+            .map(e -> builder.handlerFor(e.getKey(), gateway, e.getValue()))
+            .reduce(RouterFunction::and)
+            .orElseThrow(() -> new IllegalArgumentException("Empty registry! " + registry));
+
     }
 
-    public MessageRouterBuilder(RouterFunction<ServerResponse> router) {
-        this.router = router;
-    }
+    @AllArgsConstructor
+    private static class Builder {
+        private final ConversionService conversionService;
 
-    public <T extends Message<R>, R> MessageRouterBuilder handlerFor(Class<T> type, Function<T, R> handler) {
-        final Http http = type.getAnnotation(Http.class);
+        private RouterFunction<ServerResponse> handlerFor(Class<? extends Request> type, Gateway gateway, Http http) {
 
-        LOGGER.info("Registering handler for {}", type.getName());
+            LOGGER.info("Registering handler for {}", type.getName());
 
-        final RouterFunction<ServerResponse> route;
-        if (http.method() == HttpMethod.GET) {
-            route = RouterFunctions.route(GET(http.path()), createGETHandler(type, handler));
+            final RouterFunction<ServerResponse> route;
+            if (http.getMethod() == HttpMethod.GET) {
+                route = RouterFunctions.route(GET(http.getPath()), createGETHandler(type, gateway));
+            }
+            else if (http.getMethod() == HttpMethod.POST && !http.isMultipart()) {
+                route = RouterFunctions.route(POST(http.getPath()), createPOSTHandler(type, gateway));
+            }
+            else {
+                throw new IllegalStateException("What? " + type.getName());
+            }
+
+            return route;
+
         }
-        else if (http.method() == HttpMethod.POST && !http.multipart()) {
-            route = RouterFunctions.route(POST(http.path()), createPOSTHandler(type, handler));
+
+        private HandlerFunction<ServerResponse> createPOSTHandler(Class<? extends Request> type, Gateway gateway) {
+            return request -> request.bodyToMono(typeOfField(type, "body"))
+                .doOnNext(msg -> LOGGER.info("Received: {}", msg))
+                .map(body -> {
+                    final Request r = BeanUtils.newInstance(type, ImmutableMap.of(
+                        "body", body,
+                        "id", convertId(request, typeOfField(type, "id"))
+//                        "parameters", conversionService.convert(request.queryParams(), typeOfField(type, "parameters"))
+                    ));
+                    return r;
+                })
+                .map(msg -> gateway.send(msg))
+                .flatMap(resp -> ServerResponse.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(fromObject(resp))
+                )
+                .switchIfEmpty(ServerResponse.notFound()
+                    .build()
+                );
         }
-        else {
-            throw new IllegalStateException("What? " + type.getName());
+
+        private Object convertId(ServerRequest request, Class<?> type) {
+            final Map<String, String> params = request.pathVariables();
+            if (params.size() == 1) {
+                return conversionService.convert(params.values().iterator().next(), type);
+            }
+            return conversionService.convert(params, type);
         }
 
-        if (router == null) {
-            return new MessageRouterBuilder(route);
-        } else {
-            return new MessageRouterBuilder(router.and(route));
+        private static Class<?> typeOfField(Class<? extends Request> type, String body) {
+            return Introspection.read(type, body)
+                .map(PropertyDescriptor::getPropertyType)
+                .orElseThrow(() -> new RuntimeException("Missing " + type.getName() + "." + body));
         }
-    }
 
-    private <T extends Message<R>, R> HandlerFunction<ServerResponse> createPOSTHandler(Class<T> type, Function<T, R> handler) {
-        return request -> request.bodyToMono(type)
-            .map(instance -> BeanUtils.populate(instance, request.pathVariables()))
-            .map(handler)
-            .flatMap(resp -> ServerResponse.ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(fromObject(resp))
-            )
-            .switchIfEmpty(ServerResponse.notFound()
-                .build()
-            );
-    }
+        private HandlerFunction<ServerResponse> createGETHandler(Class<? extends Request> type, Gateway gateway) {
+            return request -> {
+                LOGGER.info("Handling request");
+                final Request r = BeanUtils.newInstance(type, ImmutableMap.of(
+                    "id", convertId(request, typeOfField(type, "id")),
+                    "parameters", BeanUtils.newInstance(typeOfField(type, "parameters"), toSimpleMap(request.queryParams()))
+                ));
+                LOGGER.info("Received {}", r);
 
-    private <T extends Message<R>, R> HandlerFunction<ServerResponse> createGETHandler(Class<T> type, Function<T, R> handler) {
-        return request -> {
-            LOGGER.info("Handling request");
-            final T message = BeanUtils.newInstance(type, ImmutableMap.<String, Object>builder()
-                .putAll(request.pathVariables())
-                .putAll(request.queryParams())
-                //TODO manage headers and query params properly
-                .build()
-            );
+                final Object response = gateway.send(r);
 
-            final R response = handler.apply(message);
+                return ServerResponse.ok()
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(fromObject(response));
+            };
+        }
 
-            return ServerResponse.ok()
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(fromObject(response));
-        };
-    }
+        private Map<String, Object> toSimpleMap(MultiValueMap<String, ?> parameters) {
+            final Map<String, Object> m = new HashMap<>();
+            parameters.forEach((k, l) -> {
+                if (l.size() > 1) {
+                    m.put(k, l);
+                } else {
+                    m.put(k, l.get(0));
+                }
+            });
+            return m;
+        }
 
-    public RouterFunction<ServerResponse> build() {
-        return router;
     }
 }

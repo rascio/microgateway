@@ -2,6 +2,7 @@ package it.r.microgateway.server.gateway;
 
 import it.r.ports.api.Gateway;
 import it.r.ports.api.Message;
+import it.r.ports.api.Request;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -10,7 +11,7 @@ import java.util.stream.Stream;
 
 public class DefaultGateway implements Gateway {
 
-    private final Map<Class<?>, Function<Message<?>, ?>> handlers;
+    private final Map<Class<?>, Function<Request<?, ?, ?, ?>, ?>> handlers;
 
     public static Gateway from(Module...modules) {
         final Registry registry = new Registry();
@@ -19,22 +20,23 @@ public class DefaultGateway implements Gateway {
         return new DefaultGateway(registry.handlers);
     }
 
-    private DefaultGateway(Map<Class<?>, Function<Message<?>, ?>> handlers) {
+    private DefaultGateway(Map<Class<?>, Function<Request<?, ?, ?, ?>, ?>> handlers) {
         this.handlers = handlers;
     }
 
     @Override
-    public <T> T send(Message<T> message) {
+    public <I, P, B, T> T send(Request<I, P, B, T> message) {
 
-        final Function<Message<?>, ?> handler = handlers.get(message.getClass());
+        final Function<Request<?, ?, ?, ?>, ?> handler = handlers.get(message.getClass());
         return (T) handler.apply(message);
     }
 
     public static class Registry {
-        private final Map<Class<?>, Function<Message<?>, ?>> handlers = new HashMap<>();
+        private final Map<Class<?>, Function<Request<?, ?, ?, ?>, ?>> handlers = new HashMap<>();
 
-        public <T extends Message<R>, R> void register(Class<T> type, Function<T, R> handler) {
-            this.handlers.put(type, (Function<Message<?>, ?>) handler);
+        public <T extends Request<?, ?, ?, R>, R> Registry register(Class<T> type, Function<T, R> handler) {
+            this.handlers.put(type, (Function<Request<?, ?, ?, ?>, ?>) handler);
+            return this;
         }
     }
 

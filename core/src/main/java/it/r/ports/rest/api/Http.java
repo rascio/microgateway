@@ -1,16 +1,21 @@
 package it.r.ports.rest.api;
 
-import it.r.ports.api.Message;
+import lombok.AllArgsConstructor;
+import lombok.Value;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
-@Retention(RetentionPolicy.RUNTIME)
-@Target(ElementType.TYPE)
-public @interface Http {
-    HttpMethod method();
-    String path();
-    boolean multipart() default false;
+@Value
+@AllArgsConstructor
+public class Http {
+    private HttpMethod method;
+    private String path;
+    private boolean multipart;
+
+    public Http(HttpMethod method, String path) {
+        this(method, path, false);
+    }
 }

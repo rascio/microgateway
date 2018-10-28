@@ -3,10 +3,11 @@ package test;
 import lombok.Value;
 
 import java.time.LocalDate;
+import java.util.Date;
 
 @Value
 public class Persona {
-    String nome;
-    String cognome;
-    LocalDate dataNascita;
+    private String nome;
+    private String cognome;
+    private Integer dataNascita;
 }

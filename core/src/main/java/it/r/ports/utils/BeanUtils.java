@@ -1,12 +1,19 @@
 package it.r.ports.utils;
 
+import com.google.common.collect.ImmutableList;
 import org.apache.commons.beanutils.BeanUtilsBean;
+import org.apache.commons.beanutils.ConvertUtils;
 import org.apache.commons.beanutils.PropertyUtilsBean;
 
+import java.beans.ConstructorProperties;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Constructor;
-import java.util.Map;
+import java.lang.reflect.InvocationTargetException;
+import java.util.*;
 import java.util.function.Function;
+import java.util.stream.Stream;
+
+import static java.util.Comparator.comparing;
 
 public class BeanUtils {
 
@@ -73,8 +80,39 @@ public class BeanUtils {
     }
 
     public static <T> T newInstance(Class<T> type, Map<String, Object> values) {
-        final T instance = newInstance(type);
-        populate(instance, values);
-        return instance;
+        return findConstructor(type, values.keySet())
+            .map(c -> newInstance(c, values))
+            .orElseGet(() -> {
+                final T instance = newInstance(type);
+                populate(instance, values);
+                return instance;
+            });
+    }
+
+    private static <T> Optional<Constructor<T>> findConstructor(Class<T> type, Set<String> strings) {
+        return Stream.of(type.getConstructors())
+            .filter(c -> c.getAnnotation(ConstructorProperties.class) != null)
+            .filter(c -> !strings.containsAll(ImmutableList.of(c.getAnnotation(ConstructorProperties.class).value())))
+            .sorted(comparing(c -> strings.size() - c.getAnnotation(ConstructorProperties.class).value().length))
+            .map(c -> (Constructor<T>) c)
+            .findFirst();
+    }
+
+    private static <U> U newInstance(Constructor<U> c, Map<String, Object> objects) {
+        final Class<?>[] types = c.getParameterTypes();
+        final String[] names = c.getAnnotation(ConstructorProperties.class).value();
+        final Object[] convertedValues = new Object[types.length];
+
+        for (int i = 0; i < types.length; i++) {
+            convertedValues[i] = ConvertUtils.convert(objects.get(names[i]), types[i]);
+        }
+
+        try {
+            return c.newInstance(convertedValues);
+        } catch (Exception e) {
+            System.out.println("types = " + Arrays.toString(types));
+            System.out.println("convertedValues = " + Arrays.toString(convertedValues));
+            throw new RuntimeException("What? ", e);
+        }
     }
 }
