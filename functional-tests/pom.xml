@@ -12,16 +12,16 @@
     <artifactId>functional-tests</artifactId>
 
     <dependencies>
-        <dependency>
-            <groupId>org.apache.commons</groupId>
-            <artifactId>commons-lang3</artifactId>
-            <version>3.4</version>
-        </dependency>
-        <dependency>
-            <groupId>it.r.microgateway</groupId>
-            <artifactId>core</artifactId>
-            <version>1.0-SNAPSHOT</version>
-        </dependency>
+        <!--<dependency>-->
+            <!--<groupId>org.apache.commons</groupId>-->
+            <!--<artifactId>commons-lang3</artifactId>-->
+            <!--<version>3.4</version>-->
+        <!--</dependency>-->
+        <!--<dependency>-->
+            <!--<groupId>it.r.microgateway</groupId>-->
+            <!--<artifactId>core</artifactId>-->
+            <!--<version>1.0-SNAPSHOT</version>-->
+        <!--</dependency>-->
 
         <dependency>
             <groupId>it.r.microgateway</groupId>
@@ -30,7 +30,7 @@
         </dependency>
         <dependency>
             <groupId>it.r.microgateway</groupId>
-            <artifactId>spring-adapter</artifactId>
+            <artifactId>spring-client</artifactId>
             <version>1.0-SNAPSHOT</version>
         </dependency>
         <dependency>
@@ -41,7 +41,7 @@
         <dependency>
             <groupId>org.apache.tomcat.embed</groupId>
             <artifactId>tomcat-embed-core</artifactId>
-            <version>8.5.6</version>
+            <version>8.5.34</version>
         </dependency>
 
         <!-- https://mvnrepository.com/artifact/org.springframework/spring-webflux -->
@@ -68,15 +68,6 @@
             <artifactId>reactor-netty</artifactId>
             <version>0.8.1.RELEASE</version>
         </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson.datatype</groupId>
-            <artifactId>jackson-datatype-jsr310</artifactId>
-            <version>2.4.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.fasterxml.jackson</groupId>
-            <artifactId>jackson-bom</artifactId>
-        </dependency>
-    </dependencies>
 
+    </dependencies>
 </project>

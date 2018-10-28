@@ -1,12 +1,4 @@
 # TODO
-
-## Modules
-- remove jersey adapter
-- maven modules structure:
-    - core
-    - server
-    - client
-    - functional-tests
     
 ## Request Serialization
 - Add support for `PUT`
