@@ -1,8 +1,6 @@
 # TODO
     
 ## Request Serialization
-- Add support for `PUT`
-- Add support for `HEAD`
 - Wrap requests and responses in class like:
     ```
     class Envelope<H, R extends Request<?, ?, ?, ?> {    

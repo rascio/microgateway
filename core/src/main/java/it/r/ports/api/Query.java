@@ -1,8 +1,8 @@
 package it.r.ports.api;
 
-public interface Query<I, P, R> extends Request<I, P, Void, R>{
+public interface Query<I, P, R> extends Request<I, P, None, R>{
 
-    default Void getBody() {
-        return null;
+    default None getBody() {
+        return None.INSTANCE;
     }
 }

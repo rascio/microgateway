@@ -1,12 +1,10 @@
 package test;
 
-import it.r.microgateway.server.gateway.DefaultGateway;
 import it.r.microgateway.server.url.MessageRouterBuilder;
+import it.r.ports.api.DefaultGateway;
 import it.r.ports.api.Gateway;
 import it.r.ports.rest.WebClientAdapter;
-import it.r.ports.rest.api.Http;
-import it.r.ports.rest.api.HttpMethod;
-import it.r.ports.rest.api.RestApiRegistry;
+import it.r.ports.utils.AuditGateway;
 import lombok.SneakyThrows;
 import lombok.Value;
 import org.apache.catalina.Context;
@@ -17,18 +15,14 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
-import test.RicercaPersona.PersonaParameters;
+import test.rubrica.RubricaModule;
+import test.rubrica.api.*;
+import test.rubrica.api.RicercaPersona.PersonaParameters;
 
-import java.time.LocalDate;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 public class Main {
-
-    private static final RestApiRegistry REGISTRY = RestApiRegistry.builder()
-        .query(RicercaPersona.class, new Http(HttpMethod.GET, "/{id}/ricerca"))
-        .command(AggiornaPersona.class, new Http(HttpMethod.POST, "/persona/{id}"))
-        .build();
 
     private static final DefaultConversionService CONVERSION_SERVICE = new DefaultConversionService();
 
@@ -50,28 +44,62 @@ public class Main {
                 .baseUrl("http://localhost:8180")
                 .build(),
             CONVERSION_SERVICE,
-            REGISTRY);
+            RubricaRestApi.REGISTRY);
 
-        System.out.println(port.send(new RicercaPersona("xxx", new PersonaParameters("nome:Manuel AND cognome:Rasc*"))));;
-        System.out.println(port.send(new AggiornaPersona("aa00", new Persona("asd", "dsa", 10))));;
+        System.out.println(port.send(
+            new CreaPersona(
+                null,
+                new Persona(
+                    "Paolino",
+                    "Paperino",
+                    10)
+                )
+            )
+        );
+        System.out.println(port.send(
+            new CreaPersona(
+                null,
+                new Persona(
+                    "//",
+                    "Topolino",
+                    10)
+                )
+            )
+        );
+        System.out.println(port.send(
+            new CreaPersona(
+                null,
+                new Persona(
+                    "Homer",
+                    "Simpson",
+                    10)
+                )
+            )
+        );
+
+        System.out.println(port.send(
+            new RicercaPersona(
+                new PersonaParameters(
+                    "ino"
+                )
+            )
+        ));
 
     }
 
     @SneakyThrows
     public static void server() {
-        final Gateway gateway = DefaultGateway.from(
-            registry -> registry.register(
-                RicercaPersona.class, RicercaPersona::toString
+        final Gateway gateway = new AuditGateway(
+            DefaultGateway.from(
+                new RubricaModule()
             )
-            .register(AggiornaPersona.class, cmd -> {
-                System.out.println("cmd = " + cmd);
-                return null;
-            })
         );
 
-        final RouterFunction<ServerResponse> httpHandler = MessageRouterBuilder.create(REGISTRY, gateway, CONVERSION_SERVICE);
-
-        System.out.println("httpHandler = " + httpHandler);
+        final RouterFunction<ServerResponse> httpHandler = MessageRouterBuilder.create(
+            RubricaRestApi.REGISTRY,
+            gateway,
+            CONVERSION_SERVICE
+        );
 
         final Tomcat tomcatServer = new Tomcat();
         tomcatServer.setHostname("localhost");

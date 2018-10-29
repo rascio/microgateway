@@ -31,12 +31,20 @@ public class RestApiRegistry {
 
     public static class Builder {
         private final Map<Class<? extends Request<?, ?, ?, ?>>, Http> apis = new HashMap<>();
-        public <Q extends Query<?, ?, ?>> Builder query(Class<Q> type, Http http) {
-            apis.put(type, http);
+        public <Q extends Query<?, ?, ?>> Builder query(Class<Q> type, String path) {
+            apis.put(type, new Http(HttpMethod.GET, path));
             return this;
         }
-        public <C extends Command<?, ?, ?>> Builder command(Class<C> type, Http http) {
-            apis.put(type, http);
+        public <C extends Command<?, ?, ?>> Builder command(Class<C> type, String path) {
+            apis.put(type, new Http(HttpMethod.POST, path));
+            return this;
+        }
+        public <C extends Command<?, ?, ?>> Builder set(Class<C> type, String path) {
+            apis.put(type, new Http(HttpMethod.PUT, path));
+            return this;
+        }
+        public <C extends Query<?, ?, Boolean>> Builder check(Class<C> type, String path) {
+            apis.put(type, new Http(HttpMethod.HEAD, path));
             return this;
         }
         public RestApiRegistry build() {

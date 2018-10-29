@@ -1,8 +1,9 @@
 package it.r.ports.api;
 
-public interface Command<I, B, R> extends Request<I, Void, B, R> {
+public interface Command<I, B, R> extends Request<I, None, B, R> {
 
-    default Void getParameters() {
-        return null;
+    default None getParameters() {
+        return None.INSTANCE;
     }
+
 }

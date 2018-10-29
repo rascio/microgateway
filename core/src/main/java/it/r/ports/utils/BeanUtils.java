@@ -13,6 +13,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Stream;
 
+import static it.r.ports.utils.Introspection.findConstructor;
 import static java.util.Comparator.comparing;
 
 public class BeanUtils {
@@ -89,15 +90,6 @@ public class BeanUtils {
             });
     }
 
-    private static <T> Optional<Constructor<T>> findConstructor(Class<T> type, Set<String> strings) {
-        return Stream.of(type.getConstructors())
-            .filter(c -> c.getAnnotation(ConstructorProperties.class) != null)
-            .filter(c -> !strings.containsAll(ImmutableList.of(c.getAnnotation(ConstructorProperties.class).value())))
-            .sorted(comparing(c -> strings.size() - c.getAnnotation(ConstructorProperties.class).value().length))
-            .map(c -> (Constructor<T>) c)
-            .findFirst();
-    }
-
     private static <U> U newInstance(Constructor<U> c, Map<String, Object> objects) {
         final Class<?>[] types = c.getParameterTypes();
         final String[] names = c.getAnnotation(ConstructorProperties.class).value();
@@ -110,8 +102,6 @@ public class BeanUtils {
         try {
             return c.newInstance(convertedValues);
         } catch (Exception e) {
-            System.out.println("types = " + Arrays.toString(types));
-            System.out.println("convertedValues = " + Arrays.toString(convertedValues));
             throw new RuntimeException("What? ", e);
         }
     }

@@ -3,11 +3,6 @@ package it.r.ports.rest.api;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
-
 @Value
 @AllArgsConstructor
 public class Http {

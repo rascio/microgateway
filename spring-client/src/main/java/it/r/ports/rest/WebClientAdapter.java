@@ -111,7 +111,10 @@ public class WebClientAdapter implements Gateway {
 
     private Map<String, Object> idToMap(Request req) {
         final Object id = req.getId();
-        if (id instanceof Map) {
+        if (id == null){
+            return Collections.emptyMap();
+        }
+        else if (id instanceof Map) {
             return (Map<String, Object>) id;
         }
         else {

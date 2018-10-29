@@ -1,8 +1,4 @@
-package it.r.microgateway.server.gateway;
-
-import it.r.ports.api.Gateway;
-import it.r.ports.api.Message;
-import it.r.ports.api.Request;
+package it.r.ports.api;
 
 import java.util.HashMap;
 import java.util.Map;

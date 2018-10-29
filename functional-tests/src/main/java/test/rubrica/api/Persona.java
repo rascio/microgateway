@@ -1,4 +1,4 @@
-package test;
+package test.rubrica.api;
 
 import lombok.Value;
 
@@ -9,5 +9,5 @@ import java.util.Date;
 public class Persona {
     private String nome;
     private String cognome;
-    private Integer dataNascita;
+    private Integer eta;
 }
