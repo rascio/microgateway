@@ -7,4 +7,9 @@ public class None {
     private None() {
 
     }
+
+    @Override
+    public String toString() {
+        return "[None]";
+    }
 }

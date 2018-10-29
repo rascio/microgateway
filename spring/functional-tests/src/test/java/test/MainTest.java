@@ -8,6 +8,7 @@ import it.r.ports.utils.AuditGateway;
 import lombok.SneakyThrows;
 import lombok.Value;
 import org.apache.catalina.Context;
+import org.apache.catalina.LifecycleException;
 import org.apache.catalina.startup.Tomcat;
 import org.springframework.core.convert.support.DefaultConversionService;
 import org.springframework.http.server.reactive.ServletHttpHandlerAdapter;
@@ -15,6 +16,9 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import org.testng.annotations.AfterClass;
+import org.testng.annotations.BeforeClass;
+import org.testng.annotations.Test;
 import test.rubrica.RubricaModule;
 import test.rubrica.api.*;
 import test.rubrica.api.RicercaPersona.PersonaParameters;
@@ -22,22 +26,36 @@ import test.rubrica.api.RicercaPersona.PersonaParameters;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
-public class Main {
+@Test
+public class MainTest {
 
     private static final DefaultConversionService CONVERSION_SERVICE = new DefaultConversionService();
+    private static Tomcat TOMCAT;
 
+    /** /
     public static void main(String[] args) throws Exception {
+     Executor executor = Executors.newCachedThreadPool();
 
-        Executor executor = Executors.newCachedThreadPool();
+     executor.execute(MainTest::server);
 
-        executor.execute(Main::server);
+     Thread.sleep(1000);
 
-        Thread.sleep(1000);
+     executor.execute(MainTest::client);
+    }
+    //*/
 
-        executor.execute(Main::client);
 
+    @BeforeClass
+    public static void setUp() {
+        TOMCAT = MainTest.server();
     }
 
+    @AfterClass
+    public static void tearDown() throws LifecycleException {
+        TOMCAT.stop();
+    }
+
+    @Test
     public static void client() {
         final Gateway port = new WebClientAdapter(
             WebClient.builder()
@@ -88,7 +106,7 @@ public class Main {
     }
 
     @SneakyThrows
-    public static void server() {
+    public static Tomcat server() {
         final Gateway gateway = new AuditGateway(
             DefaultGateway.from(
                 new RubricaModule()
@@ -115,8 +133,8 @@ public class Main {
         rootContext.addServletMappingDecoded("/", "httpHandlerServlet");
 
         tomcatServer.start();
-        Thread.sleep(10000000);
-        tomcatServer.stop();
+
+        return tomcatServer;
 
     }
     @Value

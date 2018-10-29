@@ -9,11 +9,21 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>client-adapters</artifactId>
+    <artifactId>spring</artifactId>
     <packaging>pom</packaging>
 
+    <properties>
+        <spring.version>5.1.0.RELEASE</spring.version>
+    </properties>
+
     <modules>
-        <module>jersey-client-adapter</module>
-        <module>spring-adapter</module>
+        <module>microgateway-client-spring</module>
+        <module>microgateway-server-spring</module>
+        <module>functional-tests</module>
     </modules>
+
+    <dependencyManagement>
+
+    </dependencyManagement>
+
 </project>

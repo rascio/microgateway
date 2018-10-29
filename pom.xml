@@ -10,9 +10,7 @@
     <packaging>pom</packaging>
     <modules>
         <module>core</module>
-        <module>functional-tests</module>
-        <module>spring-client</module>
-        <module>server-spring</module>
+        <module>spring</module>
     </modules>
 
     <properties>

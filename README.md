@@ -1,4 +1,7 @@
 # TODO
+
+## Modules
+- Add a new `Gateway` type to be used in `Module#register` to give dependencies an instance of `Gateway` before it is ready (a stateful implementation, rejecting request when not ready).
     
 ## Request Serialization
 - Wrap requests and responses in class like:
