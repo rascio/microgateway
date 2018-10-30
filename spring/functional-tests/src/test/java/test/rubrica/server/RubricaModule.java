@@ -1,7 +1,8 @@
-package test.rubrica;
+package test.rubrica.server;
 
 import it.r.ports.api.DefaultGateway.Module;
 import it.r.ports.api.DefaultGateway.Registry;
+import it.r.ports.api.Gateway;
 import test.rubrica.api.*;
 
 import java.util.List;
@@ -15,7 +16,7 @@ public class RubricaModule implements Module {
     private final Map<String, Persona> persons = new ConcurrentHashMap<>();
 
     @Override
-    public void register(Registry registry) {
+    public void register(Registry registry, Gateway gateway) {
         registry
             .register(RicercaPersona.class, this::find)
             .register(AggiornaPersona.class, this::update)

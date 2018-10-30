@@ -1,9 +1,11 @@
 # TODO
 
-## Modules
-- Add a new `Gateway` type to be used in `Module#register` to give dependencies an instance of `Gateway` before it is ready (a stateful implementation, rejecting request when not ready).
+## Handlers
+- The handlers contract should be `Req->Publisher<R>` instead of `Req->R`
+- Handlers should accesss the body as `Mono`/`Flux`
     
 ## Request Serialization
+- Handle deserialization errors (bad json, bad types, etc...)
 - Wrap requests and responses in class like:
     ```
     class Envelope<H, R extends Request<?, ?, ?, ?> {    

@@ -3,7 +3,7 @@ package test;
 import it.r.microgateway.server.url.MessageRouterBuilder;
 import it.r.ports.api.DefaultGateway;
 import it.r.ports.api.Gateway;
-import it.r.ports.rest.WebClientAdapter;
+import it.r.ports.rest.WebClientModule;
 import it.r.ports.utils.AuditGateway;
 import lombok.SneakyThrows;
 import lombok.Value;
@@ -16,15 +16,15 @@ import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.server.RouterFunction;
 import org.springframework.web.reactive.function.server.RouterFunctions;
 import org.springframework.web.reactive.function.server.ServerResponse;
+import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import test.rubrica.RubricaModule;
+import test.rubrica.server.RubricaModule;
 import test.rubrica.api.*;
 import test.rubrica.api.RicercaPersona.PersonaParameters;
 
-import java.util.concurrent.Executor;
-import java.util.concurrent.Executors;
+import java.util.List;
 
 @Test
 public class MainTest {
@@ -57,16 +57,18 @@ public class MainTest {
 
     @Test
     public static void client() {
-        final Gateway port = new WebClientAdapter(
-            WebClient.builder()
-                .baseUrl("http://localhost:8180")
-                .build(),
-            CONVERSION_SERVICE,
-            RubricaRestApi.REGISTRY);
+        final Gateway port = DefaultGateway.builder()
+            .module(new WebClientModule(
+                WebClient.builder()
+                    .baseUrl("http://localhost:8180")
+                    .build(),
+                CONVERSION_SERVICE,
+                RubricaRestApi.REGISTRY
+            ))
+            .build();
 
         System.out.println(port.send(
             new CreaPersona(
-                null,
                 new Persona(
                     "Paolino",
                     "Paperino",
@@ -76,7 +78,6 @@ public class MainTest {
         );
         System.out.println(port.send(
             new CreaPersona(
-                null,
                 new Persona(
                     "//",
                     "Topolino",
@@ -86,7 +87,6 @@ public class MainTest {
         );
         System.out.println(port.send(
             new CreaPersona(
-                null,
                 new Persona(
                     "Homer",
                     "Simpson",
@@ -95,23 +95,24 @@ public class MainTest {
             )
         );
 
-        System.out.println(port.send(
+        final List<Persona> persons = port.send(
             new RicercaPersona(
                 new PersonaParameters(
                     "ino"
                 )
             )
-        ));
+        );
+        Assert.assertEquals(persons.size(), 2);
+        System.out.println(persons);
 
     }
 
     @SneakyThrows
     public static Tomcat server() {
-        final Gateway gateway = new AuditGateway(
-            DefaultGateway.from(
-                new RubricaModule()
-            )
-        );
+        final Gateway gateway = DefaultGateway.builder()
+            .module(new RubricaModule())
+            .with(AuditGateway::new)
+            .build();
 
         final RouterFunction<ServerResponse> httpHandler = MessageRouterBuilder.create(
             RubricaRestApi.REGISTRY,

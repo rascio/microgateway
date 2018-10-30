@@ -101,8 +101,10 @@ public class BeanUtils {
 
         try {
             return c.newInstance(convertedValues);
-        } catch (Exception e) {
-            throw new RuntimeException("What? ", e);
+        } catch (IllegalArgumentException e) {
+            throw new RuntimeException("Not matching constructor:\n\t" + Arrays.toString(types) + "\n\t" + Arrays.toString(convertedValues) , e);
+        } catch (IllegalAccessException | InstantiationException | InvocationTargetException e) {
+            throw new RuntimeException("What?", e);
         }
     }
 }

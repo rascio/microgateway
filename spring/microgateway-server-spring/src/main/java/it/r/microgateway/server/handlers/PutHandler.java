@@ -1,6 +1,6 @@
 package it.r.microgateway.server.handlers;
 
-import com.google.common.collect.ImmutableMap;
+import it.r.microgateway.server.utils.BeanBuilder;
 import it.r.ports.api.Gateway;
 import it.r.ports.api.Request;
 import it.r.ports.utils.BeanUtils;
@@ -14,21 +14,19 @@ import static org.springframework.web.reactive.function.BodyInserters.fromObject
 
 public class PutHandler extends AbstractHandler {
 
-    public PutHandler(Class<? extends Request> type, Gateway gateway, ConversionService conversionService) {
+    public PutHandler(Class<? extends Request<?, ?, ?, ?>> type, Gateway gateway, ConversionService conversionService) {
         super(type, gateway, conversionService);
     }
 
     @Override
     public Mono<ServerResponse> handle(ServerRequest request) {
-        return request.bodyToMono(typeOfField(type, "body"))
-            .map(body -> {
-                final Request r = BeanUtils.newInstance(type, ImmutableMap.of(
-                    "body", body,
-                    "id", convertId(request, typeOfField(type, "id"))
+        return request.bodyToMono(typeOfField(type, "body").get()) //TODO manage properly
+            .map(body -> new BeanBuilder<>(type)
+                .with("body", body)
+                .with("id", convertId(request))
 //                        "parameters", conversionService.convert(request.queryParams(), typeOfField(type, "parameters"))
-                ));
-                return r;
-            })
+                .build()
+            )
             .flatMap(msg -> Mono.justOrEmpty(gateway.send(msg)))
             .flatMap(resp -> ServerResponse.ok()
                 .contentType(MediaType.APPLICATION_JSON)

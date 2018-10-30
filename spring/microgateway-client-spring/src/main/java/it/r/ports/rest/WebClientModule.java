@@ -1,6 +1,9 @@
 package it.r.ports.rest;
 
 import com.google.common.collect.ImmutableMap;
+import it.r.ports.api.DefaultGateway.GatewayWrapper;
+import it.r.ports.api.DefaultGateway.Module;
+import it.r.ports.api.DefaultGateway.Registry;
 import it.r.ports.api.Gateway;
 import it.r.ports.api.Request;
 import it.r.ports.rest.api.Http;
@@ -22,34 +25,42 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 @RequiredArgsConstructor
-public class WebClientAdapter implements Gateway {
+public class WebClientModule implements Module {
 
     private final WebClient webClient;
     private final ConversionService conversionService;
     private final RestApiRegistry restApiRegistry;
 
     @Override
-    public <I, P, B, T> T send(Request<I, P, B, T> message) {
-        final Http http = restApiRegistry.find(message.getClass())
-            .orElseThrow(() -> new IllegalStateException("Not managed " + message.getClass().getName()));
+    public void register(Registry registry, Gateway gateway) {
+        restApiRegistry.getApis()
+            .forEach((type, http) -> {
+                final Function<Request, RequestHeadersSpec<?>> handler;
 
-        final RequestHeadersSpec<?> spec;
-        switch (http.getMethod()) {
-            case GET:
-                spec = get(http, message);
-                break;
-            case POST:
-                spec = post(http, message);
-                break;
-            default:
-                throw new IllegalArgumentException("Not managed " + http.getMethod() + " for " + message.getClass().getName());
-        }
-        return spec.exchange()
+                switch (http.getMethod()) {
+                    case GET:
+                        handler = message -> get(http, message);
+                        break;
+                    case POST:
+                        handler = message -> post(http, message);
+                        break;
+                    default:
+                        throw new IllegalArgumentException("Not managed " + http.getMethod() + " for " + type.getName());
+                }
+                register(registry, (Class) type, handler);
+            });
+    }
+
+    private <T extends Request, R> void register(Registry registry, Class<T> type, Function<T, RequestHeadersSpec<?>> handler) {
+        registry.register(type, message -> handler.apply(message)
+            .exchange()
             .flatMap(response -> response.bodyToMono(message.responseType()))
-            .block();
+            .block());
     }
 
     private <T, B> RequestHeadersSpec<?> post(Http http, Request<?, ?, B, T> message) {

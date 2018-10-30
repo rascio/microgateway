@@ -3,6 +3,7 @@ package it.r.microgateway.server.handlers;
 import it.r.ports.api.Gateway;
 import it.r.ports.api.None;
 import it.r.ports.api.Request;
+import it.r.ports.utils.BeanUtils;
 import it.r.ports.utils.Introspection;
 import lombok.AllArgsConstructor;
 import org.springframework.core.convert.ConversionService;
@@ -14,41 +15,47 @@ import org.springframework.web.reactive.function.server.ServerResponse;
 import java.beans.PropertyDescriptor;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @AllArgsConstructor
 abstract class AbstractHandler implements HandlerFunction<ServerResponse> {
 
-    protected final Class<? extends Request> type;
+    protected final Class<? extends Request<?, ?, ?, ?>> type;
     protected final Gateway gateway;
     protected final ConversionService conversionService;
 
-    protected Map<String, Object> toSimpleMap(MultiValueMap<String, ?> parameters) {
-        final Map<String, Object> m = new HashMap<>();
-        parameters.forEach((k, l) -> {
+    protected Optional<Object> convertParameters(ServerRequest request) {
+        final Map<String, Object> fields = new HashMap<>();
+
+        request.queryParams().forEach((k, l) -> {
             if (l.size() > 1) {
-                m.put(k, l);
+                fields.put(k, l);
             } else {
-                m.put(k, l.get(0));
+                fields.put(k, l.get(0));
             }
         });
-        return m;
+        return typeOfField(type, "parameters")
+            .map(type -> BeanUtils.newInstance(type, fields));
     }
 
-    protected Class<?> typeOfField(Class<? extends Request> type, String body) {
-        return Introspection.read(type, body)
-            .map(PropertyDescriptor::getPropertyType)
-            .orElseThrow(() -> new RuntimeException("Missing " + type.getName() + "." + body));
+    protected Optional<Class<?>> typeOfField(Class<? extends Request> type, String prop) {
+        return Introspection.read(type, prop)
+            .map(PropertyDescriptor::getPropertyType);
+            //.orElseThrow(() -> new RuntimeException("Missing " + type.getName() + "." + prop));
     }
 
-    protected Object convertId(ServerRequest request, Class<?> type) {
-        if (type == None.class) {
-            return None.INSTANCE;
-        }
-        final Map<String, String> params = request.pathVariables();
-        System.out.println(params);
-        if (params.size() == 1) {
-            return conversionService.convert(params.values().iterator().next(), type);
-        }
-        return conversionService.convert(params, type);
+    protected Optional<Object> convertId(ServerRequest request) {
+        return typeOfField(type, "id")
+            .filter(type -> !None.class.isAssignableFrom(type))
+            .map(type -> {
+//                if (type == None.class) {
+//                    return None.INSTANCE;
+//                }
+                final Map<String, String> params = request.pathVariables();
+                if (params.size() == 1) {
+                    return conversionService.convert(params.values().iterator().next(), type);
+                }
+                return conversionService.convert(params, type);
+            });
     }
 }

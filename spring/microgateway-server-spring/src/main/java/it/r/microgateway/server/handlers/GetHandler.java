@@ -1,6 +1,6 @@
 package it.r.microgateway.server.handlers;
 
-import com.google.common.collect.ImmutableMap;
+import it.r.microgateway.server.utils.BeanBuilder;
 import it.r.ports.api.Gateway;
 import it.r.ports.api.Request;
 import org.springframework.core.convert.ConversionService;
@@ -14,18 +14,17 @@ import static org.springframework.web.reactive.function.BodyInserters.fromObject
 
 public class GetHandler extends AbstractHandler {
 
-    public GetHandler(Class<? extends Request> type, Gateway gateway, ConversionService conversionService) {
+    public GetHandler(Class<? extends Request<?, ?, ?, ?>> type, Gateway gateway, ConversionService conversionService) {
         super(type, gateway, conversionService);
     }
 
     @Override
     public Mono<ServerResponse> handle(ServerRequest request) {
-        final Request r = newInstance(type, ImmutableMap.of(
-            "id", convertId(request, typeOfField(type, "id")),
-            "parameters", newInstance(typeOfField(type, "parameters"),
-                    toSimpleMap(request.queryParams())
-                )
-        ));
+        final Request r = new BeanBuilder<>(type)
+            .with("id", convertId(request))
+            .with("parameters", convertParameters(request))
+            .build();
+
         final Object response = gateway.send(r);
 
         return ServerResponse.ok()

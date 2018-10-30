@@ -38,7 +38,7 @@ public class MessageRouterBuilder {
     private static class Builder {
         private final ConversionService conversionService;
 
-        private RouterFunction<ServerResponse> handlerFor(Class<? extends Request> type, Gateway gateway, Http http) {
+        private RouterFunction<ServerResponse> handlerFor(Class<? extends Request<?, ?, ?, ?>> type, Gateway gateway, Http http) {
 
             LOGGER.info("Registering handler for {}", type.getName());
 
