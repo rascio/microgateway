@@ -1,5 +1,6 @@
 package it.r.ports.authorization.api;
 
+import it.r.ports.api.Envelope;
 import it.r.ports.api.Gateway;
 import it.r.ports.api.Request;
 
@@ -13,8 +14,17 @@ public class AuthorizationGateway implements Gateway {
     }
 
     @Override
-    public <I, P, B, T> T send(Request<I, P, B, T> message) {
-        return null;
+    public <R> R send(Envelope<? extends Request<?, ?, ?, R>> message) {
+        if (checkAuth(message)) {
+            return gateway.send(message);
+        }
+        else {
+            throw new RuntimeException("Not authorized!");
+        }
+    }
+
+    private <R, T extends Request<?, ?, ?, R>> boolean checkAuth(Envelope<T> message) {
+        return true;
     }
 
     public static class Builder {

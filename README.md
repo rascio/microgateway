@@ -3,6 +3,7 @@
 ## Handlers
 - The handlers contract should be `Req->Publisher<R>` instead of `Req->R`
 - Handlers should accesss the body as `Mono`/`Flux`
+- Make `Envelope` an interface and wrap the spring `HttpServerRequest` to expose the `Mono<BODY>`
     
 ## Request Serialization
 - Handle deserialization errors (bad json, bad types, etc...)

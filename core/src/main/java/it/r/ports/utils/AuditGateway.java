@@ -1,5 +1,6 @@
 package it.r.ports.utils;
 
+import it.r.ports.api.Envelope;
 import it.r.ports.api.Gateway;
 import it.r.ports.api.Request;
 import lombok.AllArgsConstructor;
@@ -13,16 +14,16 @@ public class AuditGateway implements Gateway {
     private final Gateway gateway;
 
     @Override
-    public <I, P, B, T> T send(Request<I, P, B, T> message) {
-
+    public <R> R send(Envelope<? extends Request<?, ?, ?, R>> message) {
         try {
-            final T result = gateway.send(message);
+            final R result = gateway.send(message);
             LOGGER.debug("Exchanging:\n\t--> {}\n\t<-- {}", message, result);
             return result;
         }
         catch (Throwable t) {
-            LOGGER.debug("Error:\n\t--> {}\n\txxx {}", t.getMessage());
+            LOGGER.debug("Error:\n\t--> {}\n\txxx {}", message, t.getMessage());
             throw t;
         }
+
     }
 }

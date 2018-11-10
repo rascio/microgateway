@@ -4,32 +4,52 @@ import com.google.common.base.Preconditions;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;
+import org.slf4j.Logger;
 
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Stream;
+
+import static org.slf4j.LoggerFactory.getLogger;
 
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class DefaultGateway implements Gateway {
 
-    private final Map<Class<?>, Function<Request<?, ?, ?, ?>, ?>> handlers;
+    public static final Logger LOGGER = getLogger(DefaultGateway.class);
+
+    private final Map<Class<?>, Function<Envelope<?>, ?>> handlers;
 
     public static Builder builder() {
         return new Builder();
     }
 
     @Override
-    public <I, P, B, T> T send(Request<I, P, B, T> message) {
+    public <R> R send(Envelope<? extends Request<?, ?, ?, R>> message) {
+        final Function<Envelope<? extends Request<?, ?, ?, R>>, R> handler = handlerFor(message);
+        return handler.apply(message);
+    }
 
-        final Function<Request<?, ?, ?, ?>, ?> handler = handlers.get(message.getClass());
-        return (T) handler.apply(message);
+    private <R> Function<Envelope<? extends Request<?, ?, ?, R>>, R> handlerFor(Envelope<? extends Request<?, ?, ?, R>> message) {
+        //Fuck the (type) system
+        final Class<?> type = message.getRequest().getClass();
+        final Function handler = handlers.get(type);
+
+        LOGGER.trace("handlerFor({}): {}", type.getName(), handler);
+
+        return handler;
+    }
+    static final int hash(Object key) {
+        int h;
+        return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
     }
 
     public static class Registry {
-        private final Map<Class<?>, Function<Request<?, ?, ?, ?>, ?>> handlers = new HashMap<>();
+        private final Map<Class<?>, Function<Envelope<?>, ?>> handlers = new HashMap<>();
 
-        public <T extends Request<?, ?, ?, R>, R> Registry register(Class<T> type, Function<T, R> handler) {
-            this.handlers.put(type, (Function<Request<?, ?, ?, ?>, ?>) handler);
+        public <T extends Request<?, ?, ?, R>, R> Registry register(Class<T> type, Function<Envelope<T>, R> handler) {
+            Preconditions.checkArgument(handler != null);
+            //Fuck the (type) system!
+            final Function fn = handler;
+            this.handlers.put(type, fn);
             return this;
         }
     }
@@ -43,7 +63,7 @@ public class DefaultGateway implements Gateway {
         private Gateway gateway;
 
         @Override
-        public <I, P, B, T> T send(Request<I, P, B, T> message) {
+        public <R> R send(Envelope<? extends Request<?, ?, ?, R>> message) {
             Preconditions.checkState(gateway != null, "Gateway not started yet");
             return gateway.send(message);
         }
@@ -77,12 +97,15 @@ public class DefaultGateway implements Gateway {
             final Registry registry = new Registry();
             final LifecycleGateway gateway = new LifecycleGateway();
             modules.forEach(m -> m.register(registry, gateway));
-            gateway.start(new DefaultGateway(registry.handlers));
 
-            Gateway result = gateway;
+            Gateway result = new DefaultGateway(registry.handlers);
             for (GatewayWrapper wrapper : wrappers) {
                 result = wrapper.wrap(result);
             }
+
+            gateway.start(result);
+
+
             return result;
         }
     }

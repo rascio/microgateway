@@ -1,8 +1,12 @@
 package it.r.ports.api;
 
+import org.springframework.http.HttpHeaders;
+
 public interface Gateway {
 
-//    <T> T send(Message<T> message);
+    default <I, P, B, T> T send(Request<I, P, B, T> message) {
+        return send(new Envelope<>(new HttpHeaders(), message, null));
+    }
 
-    <I, P, B, T> T send(Request<I, P, B, T> message);
+    <R> R send(Envelope<? extends Request<?, ?, ?, R>> message);
 }
