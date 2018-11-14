@@ -4,7 +4,6 @@ import it.r.ports.api.DefaultGateway.Module;
 import it.r.ports.api.DefaultGateway.Registry;
 import it.r.ports.api.Envelope;
 import it.r.ports.api.Gateway;
-import it.r.ports.api.None;
 import test.rubrica.api.*;
 import test.rubrica.api.RicercaPersona.PersonaParameters;
 import test.rubrica.api.RicercaPersona.PersonaResult;

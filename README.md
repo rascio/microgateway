@@ -2,27 +2,18 @@
 
 ## Handlers
 - The handlers contract should be `Req->Publisher<R>` instead of `Req->R`
-- Handlers should accesss the body as `Mono`/`Flux`
-- Make `Envelope` an interface and wrap the spring `HttpServerRequest` to expose the `Mono<BODY>`
-    
-## Request Serialization
-- Handle deserialization errors (bad json, bad types, etc...)
-- Wrap requests and responses in class like:
+- Add `HandlerWrapper`s registration in `DefaultGateway.Builder` like: 
     ```
-    class Envelope<H, R extends Request<?, ?, ?, ?> {    
-        H headers;
-        R request;
+    interface HandlerWrapper {
+        <T extends Request<?, ?, ?, R>, R> wrap(Class<T> type, Function<Envelope<T>, R> handler);
     }
     ```
-    and manage HTTP headers
+    
+## Requests
+- Handle deserialization errors server side (bad json, bad types, etc...)
+- Handle error responses in client
 - Manage query parameters for all HTTP methods
-- `java.time` serialization doesn't work
 
 ## Hypermedia
-- Add an `AuthorizationGateway` like:
-    ```
-    interface AuthorizationGateway {
-        boolean isAuthorized(Envelope/Request)
-    }
-    ```
-- Create Jackson `@Filter` to filter not authorized `Request` fields from response
+- Cache inspection and request filtering strategies
+- Jackson `Request` deserialization with `RestApiRegistry`

@@ -13,7 +13,7 @@
     <logger name="io.netty" level="WARN" />
     <logger name="org.springframework" level="WARN" />
 
-    <root level="TRACE">
+    <root level="DEBUG">
         <appender-ref ref="STDOUT" />
     </root>
 </configuration>

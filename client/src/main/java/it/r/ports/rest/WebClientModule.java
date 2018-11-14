@@ -4,6 +4,7 @@ import it.r.ports.api.DefaultGateway.Module;
 import it.r.ports.api.DefaultGateway.Registry;
 import it.r.ports.api.Envelope;
 import it.r.ports.api.Gateway;
+import it.r.ports.api.StaticQuery;
 import it.r.ports.rest.api.Http;
 import it.r.ports.rest.api.RestApiRegistry;
 import it.r.ports.utils.UriUtils;
@@ -15,6 +16,8 @@ import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClient.RequestHeadersSpec;
 
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.util.function.Function;
 
 @RequiredArgsConstructor
@@ -50,6 +53,7 @@ public class WebClientModule implements Module {
         registry.register(type, message -> handler.apply(message)
             .exchange()
             .flatMap(response -> response.bodyToMono(message.getRequest().responseType()))
+            .doOnNext(v -> LOGGER.info(v.getClass().getName()))
             .block());
     }
 

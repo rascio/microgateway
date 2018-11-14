@@ -1,6 +1,7 @@
 package it.r.ports.hypermedia.api;
 
 import it.r.ports.api.Request;
+import lombok.ToString;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -9,6 +10,7 @@ import java.util.Map.Entry;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+@ToString
 public abstract class Resource {
 
     private final Map<String, Request<?, ?, ?, ?>> links = new HashMap<>();

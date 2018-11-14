@@ -2,6 +2,7 @@ package it.r.ports.utils;
 
 import com.google.common.collect.ImmutableList;
 import it.r.ports.api.Request;
+import org.springframework.core.ParameterizedTypeReference;
 
 import java.beans.ConstructorProperties;
 import java.beans.IntrospectionException;
@@ -57,24 +58,16 @@ public class Introspection {
             .min(comparing(c -> strings.size() - c.getAnnotation(ConstructorProperties.class).value().length));
     }
 
-    private static final Map<Class<?>, Class<?>> RESPONSES_CACHE = new ConcurrentHashMap<>();
+    private static final Map<Class<?>, ParameterizedTypeReference<?>> RESPONSES_CACHE = new ConcurrentHashMap<>();
     @SuppressWarnings("unchecked")
-    public static final <M extends Request<?, ?, ?, R>, R> Class<R> responseType(Class<M> type) {
-        return (Class<R>) RESPONSES_CACHE.computeIfAbsent(type, k -> Stream.of(k.getGenericInterfaces())
+    public static final <M extends Request<?, ?, ?, R>, R>ParameterizedTypeReference<R> responseType(Class<M> type) {
+        return (ParameterizedTypeReference<R>) RESPONSES_CACHE.computeIfAbsent(type, k -> Stream.of(k.getGenericInterfaces())
             .filter(ParameterizedType.class::isInstance)
             .map(ParameterizedType.class::cast)
             .filter(t -> t.getRawType() instanceof Class)
             .filter(t -> Request.class.isAssignableFrom((Class<?>) t.getRawType()))
             .map(t -> t.getActualTypeArguments()[t.getActualTypeArguments().length - 1])
-            .map(t -> {
-                if (t instanceof Class) {
-                    return (Class<?>)t;
-                } else if (t instanceof ParameterizedType) {
-                    return (Class<?>)((ParameterizedType) t).getRawType();
-                } else {
-                    throw new RuntimeException("Not managed type: " + t.getTypeName());
-                }
-            })
+            .map(ParameterizedTypeReference::forType)
             .findFirst()
             .orElseThrow(() -> new IllegalArgumentException("Does " + type.getName() + " implements Request?")));
     }
