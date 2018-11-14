@@ -1,6 +1,7 @@
 package it.r.microgateway.server.handlers;
 
 import it.r.microgateway.server.utils.BeanBuilder;
+import it.r.ports.api.Envelope;
 import it.r.ports.api.Gateway;
 import it.r.ports.api.Request;
 import org.springframework.core.convert.ConversionService;
@@ -25,7 +26,8 @@ public class GetHandler extends AbstractHandler {
             .with("parameters", convertParameters(request))
             .build();
 
-        final Object response = gateway.send(envelope(request, r));
+        final Envelope envelope = envelope(request, r);
+        final Object response = gateway.send(envelope);
 
         return ServerResponse.ok()
             .contentType(MediaType.APPLICATION_JSON)

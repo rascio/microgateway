@@ -1,6 +1,7 @@
 package it.r.microgateway.server.handlers;
 
 import it.r.microgateway.server.utils.BeanBuilder;
+import it.r.ports.api.Envelope;
 import it.r.ports.api.Gateway;
 import it.r.ports.api.Request;
 import org.springframework.core.convert.ConversionService;
@@ -23,7 +24,8 @@ public class HeadHandler extends AbstractHandler {
             .with("parameters", convertParameters(request))
             .build();
 
-        gateway.send(envelope(request, r));
+        final Envelope envelope = envelope(request, r);
+        gateway.send(envelope);
 
         return ServerResponse.ok()
             .build();

@@ -14,7 +14,7 @@ import static org.slf4j.LoggerFactory.getLogger;
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
 public class DefaultGateway implements Gateway {
 
-    public static final Logger LOGGER = getLogger(DefaultGateway.class);
+    private static final Logger LOGGER = getLogger(DefaultGateway.class);
 
     private final Map<Class<?>, Function<Envelope<?>, ?>> handlers;
 
@@ -36,10 +36,6 @@ public class DefaultGateway implements Gateway {
         LOGGER.trace("handlerFor({}): {}", type.getName(), handler);
 
         return handler;
-    }
-    static final int hash(Object key) {
-        int h;
-        return (key == null) ? 0 : (h = key.hashCode()) ^ (h >>> 16);
     }
 
     public static class Registry {
@@ -96,9 +92,11 @@ public class DefaultGateway implements Gateway {
         public Gateway build() {
             final Registry registry = new Registry();
             final LifecycleGateway gateway = new LifecycleGateway();
+
             modules.forEach(m -> m.register(registry, gateway));
 
             Gateway result = new DefaultGateway(registry.handlers);
+
             for (GatewayWrapper wrapper : wrappers) {
                 result = wrapper.wrap(result);
             }

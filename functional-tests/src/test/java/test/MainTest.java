@@ -1,26 +1,21 @@
 package test;
 
-import it.r.microgateway.server.url.MessageRouterBuilder;
 import it.r.ports.api.DefaultGateway;
 import it.r.ports.api.Gateway;
 import it.r.ports.rest.WebClientModule;
 import it.r.ports.utils.AuditGateway;
 import lombok.SneakyThrows;
-import lombok.Value;
-import org.apache.catalina.Context;
 import org.apache.catalina.LifecycleException;
-import org.apache.catalina.startup.Tomcat;
+import org.springframework.boot.SpringApplication;
+import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.core.convert.support.DefaultConversionService;
-import org.springframework.http.server.reactive.ServletHttpHandlerAdapter;
 import org.springframework.web.reactive.function.client.WebClient;
-import org.springframework.web.reactive.function.server.RouterFunction;
-import org.springframework.web.reactive.function.server.RouterFunctions;
-import org.springframework.web.reactive.function.server.ServerResponse;
 import org.testng.Assert;
 import org.testng.annotations.AfterClass;
 import org.testng.annotations.BeforeClass;
 import org.testng.annotations.Test;
-import test.rubrica.server.RubricaModule;
+import test.rubrica.api.RicercaPersona.PersonaResult;
+import test.rubrica.server.RubricaApplication;
 import test.rubrica.api.*;
 import test.rubrica.api.RicercaPersona.PersonaParameters;
 
@@ -30,7 +25,7 @@ import java.util.List;
 public class MainTest {
 
     private static final DefaultConversionService CONVERSION_SERVICE = new DefaultConversionService();
-    private static Tomcat TOMCAT;
+    private static ConfigurableApplicationContext APPLICATION;
 
     /** /
     public static void main(String[] args) throws Exception {
@@ -45,24 +40,23 @@ public class MainTest {
     //*/
 
 
-    @BeforeClass
-    public static void setUp() {
-        TOMCAT = MainTest.server();
-    }
-
-    @AfterClass
-    public static void tearDown() throws LifecycleException {
-        TOMCAT.stop();
-    }
+//    @BeforeClass
+//    public static void setUp() {
+//        APPLICATION = MainTest.server();
+//    }
+//
+//    @AfterClass
+//    public static void tearDown() {
+//        APPLICATION.stop();
+//    }
 
     @Test
     public static void client() {
         final Gateway port = DefaultGateway.builder()
             .module(new WebClientModule(
                 WebClient.builder()
-                    .baseUrl("http://localhost:8180")
+                    .baseUrl("http://localhost:8080")
                     .build(),
-                CONVERSION_SERVICE,
                 RubricaRestApi.REGISTRY
             ))
             .with(AuditGateway::new)
@@ -86,17 +80,17 @@ public class MainTest {
                 )
             )
         );
-        System.out.println(port.send(
+        final String homer = port.send(
             new CreaPersona(
                 new Persona(
                     "Homer",
                     "Simpson",
                     10)
-                )
             )
         );
+        System.out.println(homer);
 
-        final List<Persona> persons = port.send(
+        final List<PersonaResult> persons = port.send(
             new RicercaPersona(
                 new PersonaParameters(
                     "ino"
@@ -109,44 +103,43 @@ public class MainTest {
     }
 
     @SneakyThrows
-    public static Tomcat server() {
-        final Gateway gateway = DefaultGateway.builder()
-            .module(new RubricaModule())
-            .with(AuditGateway::new)
-            .build();
-
-        final RouterFunction<ServerResponse> httpHandler = MessageRouterBuilder.create(
-            RubricaRestApi.REGISTRY,
-            gateway,
-            CONVERSION_SERVICE
-        );
-
-        final Tomcat tomcatServer = new Tomcat();
-        tomcatServer.setHostname("localhost");
-        tomcatServer.setPort(8180);
-        final Context rootContext = tomcatServer.addContext("", System.getProperty("java.io.tmpdir"));
-        final ServletHttpHandlerAdapter servlet = new ServletHttpHandlerAdapter(
-            RouterFunctions.toHttpHandler(httpHandler)
-        );
-        Tomcat.addServlet(rootContext, "httpHandlerServlet", servlet)
-            .setAsyncSupported(true);
-
-
-        rootContext.addServletMappingDecoded("/", "httpHandlerServlet");
-
-        tomcatServer.start();
-
-        return tomcatServer;
+    public static ConfigurableApplicationContext server() {
+        return SpringApplication.run(RubricaApplication.class);
+//        final Gateway gateway = DefaultGateway.builder()
+//            .module(new RubricaModule())
+//            .with(AuditGateway::new)
+//            .with(AuthorizationGateway.builder()
+//                .authorize(DettaglioPersona.class, (req, g) -> false)
+//                .create()
+//            )
+//            .build();
+//
+//        final RouterFunction<ServerResponse> httpHandler = MessageRouterBuilder.create(
+//            RubricaRestApi.REGISTRY,
+//            gateway,
+//            CONVERSION_SERVICE
+//        );
+//
+//        final Tomcat tomcatServer = new Tomcat();
+//        tomcatServer.setHostname("localhost");
+//        tomcatServer.setPort(8180);
+//        final Context rootContext = tomcatServer.addContext("", System.getProperty("java.io.tmpdir"));
+//        final ServletHttpHandlerAdapter servlet = new ServletHttpHandlerAdapter(
+//            RouterFunctions.toHttpHandler(httpHandler)
+//        );
+//        Tomcat.addServlet(rootContext, "httpHandlerServlet", servlet)
+//            .setAsyncSupported(true);
+//
+//
+//        rootContext.addServletMappingDecoded("/", "httpHandlerServlet");
+//
+//        tomcatServer.start();
+//
+//        return tomcatServer;
 
     }
-    @Value
-    public static class DettaglioPersona {
-        private final Persona persona;
-        private final AggiornaPersona modifica;
-        private final RicercaPersona ricerca;
-    }
 
-//    @JsonFilter("hypermedia")
+    //    @JsonFilter("hypermedia")
     interface MessageMixin {
 
     }

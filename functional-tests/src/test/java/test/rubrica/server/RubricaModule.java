@@ -4,7 +4,10 @@ import it.r.ports.api.DefaultGateway.Module;
 import it.r.ports.api.DefaultGateway.Registry;
 import it.r.ports.api.Envelope;
 import it.r.ports.api.Gateway;
+import it.r.ports.api.None;
 import test.rubrica.api.*;
+import test.rubrica.api.RicercaPersona.PersonaParameters;
+import test.rubrica.api.RicercaPersona.PersonaResult;
 
 import java.util.List;
 import java.util.Map;
@@ -26,14 +29,31 @@ public class RubricaModule implements Module {
     }
 
 
-    private List<Persona> find(Envelope<RicercaPersona> envelope) {
+    private List<PersonaResult> find(Envelope<RicercaPersona> envelope) {
         final RicercaPersona query = envelope.getRequest();
-        return persons.values()
+        return persons.entrySet()
             .stream()
-            .filter(p -> p.getNome().contains(query.getParameters().getQ())
-                || p.getCognome().contains(query.getParameters().getQ())
-                || p.getEta().toString().contains(query.getParameters().getQ())
+            .filter(e -> {
+                final Persona p = e.getValue();
+                return p.getNome().contains(query.getParameters().getQ())
+                        || p.getCognome().contains(query.getParameters().getQ())
+                        || p.getEta().toString().contains(query.getParameters().getQ());
+                }
             )
+            .map(e -> {
+                final Persona p = e.getValue();
+
+                final PersonaResult result = new PersonaResult(p.getNome(), p.getCognome());
+                result.link("dettaglio",
+                    new DettaglioPersona(e.getKey())
+                );
+                result.link("ricerca",
+                    new RicercaPersona(
+                        new PersonaParameters(p.getCognome())
+                    )
+                );
+                return result;
+            })
             .collect(Collectors.toList());
     }
 

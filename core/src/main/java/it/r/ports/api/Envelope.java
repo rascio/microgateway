@@ -10,4 +10,8 @@ public class Envelope<T extends Request<?, ?, ?, ?>> {
     HttpHeaders headers;
     T request;
     Principal principal;
+
+    public <R extends Request<?, ?, ?, ?>> Envelope<R> withRequest(R request) {
+        return new Envelope<>(this.headers, request, this.principal);
+    }
 }

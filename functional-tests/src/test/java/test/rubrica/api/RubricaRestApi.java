@@ -4,9 +4,9 @@ import it.r.ports.rest.api.RestApiRegistry;
 
 public class RubricaRestApi {
     public static RestApiRegistry REGISTRY = RestApiRegistry.builder()
-        .query(RicercaPersona.class, "/persona")
-        .command(CreaPersona.class, "/persona")
-        .query(DettaglioPersona.class, "/persona/{id}")
-        .command(AggiornaPersona.class, "/persona/{id}")
+        .get(RicercaPersona.class, "/persona")
+        .post(CreaPersona.class, "/persona")
+        .get(DettaglioPersona.class, "/persona/{id}")
+        .post(AggiornaPersona.class, "/persona/{id}")
         .build();
 }
