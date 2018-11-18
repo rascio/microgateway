@@ -15,5 +15,5 @@
 - Manage query parameters for all HTTP methods
 
 ## Hypermedia
-- Cache inspection and request filtering strategies
+- Cache inspection and request filtering strategies @see AuthorizationGateway
 - Jackson `Request` deserialization with `RestApiRegistry`

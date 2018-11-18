@@ -51,6 +51,9 @@ public class RubricaModule implements Module {
                         new PersonaParameters(p.getCognome())
                     )
                 );
+                result.link("crea",
+                    new CreaPersona(new Persona("", query.getParameters().getQ(), null))
+                );
                 return result;
             })
             .collect(Collectors.toList());

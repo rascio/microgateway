@@ -11,10 +11,13 @@ import it.r.ports.utils.UriUtils;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.reactive.function.BodyExtractors;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClient.RequestHeadersSpec;
+import reactor.core.publisher.Mono;
 
 import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
@@ -51,8 +54,10 @@ public class WebClientModule implements Module {
     private <T> void register(Registry registry, Class type, Function<Envelope, RequestHeadersSpec<?>> handler) {
         LOGGER.debug("Registration handler for {}", type.getName());
         registry.register(type, message -> handler.apply(message)
-            .exchange()
-            .flatMap(response -> response.bodyToMono(message.getRequest().responseType()))
+            .retrieve()
+            .onStatus(HttpStatus::isError,
+                resp -> Mono.error(new RuntimeException(resp.statusCode().toString())))
+            .bodyToMono(message.getRequest().responseType())
             .doOnNext(v -> LOGGER.info(v.getClass().getName()))
             .block());
     }

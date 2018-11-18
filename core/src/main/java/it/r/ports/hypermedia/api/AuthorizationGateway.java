@@ -52,7 +52,7 @@ public class AuthorizationGateway implements Gateway {
             return (R) inspect(result, message);
         }
         else {
-            throw new RuntimeException("Not authorized!");
+            throw new AuthorizationException(message, "Not authorized!");
         }
     }
 
@@ -65,7 +65,8 @@ public class AuthorizationGateway implements Gateway {
          *
          *  Registration of new filters for new types ("primitive" like Iterable and Map)
          */
-        LOGGER.trace("Inspect: [{}] {}", value.getClass().getName(), value);
+        if (LOGGER.isTraceEnabled())
+            LOGGER.trace("Inspect: [{}] {}", value != null ? value.getClass().getName() : "//", value);
         if (value == null
             || value.getClass().isPrimitive()
             || value instanceof String
